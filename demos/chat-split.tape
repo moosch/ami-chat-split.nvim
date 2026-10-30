@@ -41,4 +41,4 @@ Escape
 Enter
 
 # --- the prompt winbar shows "⟳ streaming…" while the reply streams in ---
-Sleep 16s
+Sleep 20s
