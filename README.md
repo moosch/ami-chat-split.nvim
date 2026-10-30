@@ -14,6 +14,16 @@ It's a reference example of an ami extension and a complete implementation of th
 It also hooks the `chat_turn_pre`/`chat_turn_post` lifecycle events (via `api.on`)
 to show a `⟳ streaming…` indicator in the prompt winbar for the whole turn.
 
+## Demo
+
+The chat panel as a right-hand split, with a `⟳ streaming…` indicator while the
+reply streams:
+
+![split chat demo](demos/chat-split.gif)
+
+> Rendered from [`demos/chat-split.tape`](demos/chat-split.tape); see
+> [`demos/README.md`](demos/README.md) to (re)generate it (needs ami-chat.nvim too).
+
 ## Requirements
 
 - [ami.nvim](https://github.com/moosch/ami.nvim) — the runtime (extension API +
