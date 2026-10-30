@@ -2,34 +2,42 @@
 
 A split-window chat UI for [ami](https://github.com/moosch/ami.nvim).
 
-ami's chat panel is a floating window by default. This extension replaces it with
-a real **window split** — a sidebar column with the transcript on top and the
-input below — by providing ami's `chat_ui` capability. Nothing in ami core
-changes; the chat controller just drives this renderer instead.
+The chat panel ([`ami-chat.nvim`](https://github.com/moosch/ami-chat.nvim)) is a
+floating window by default. This extension replaces it with a real **window
+split** — a sidebar column with the transcript on top and the input below — by
+providing the `chat_ui` capability that ami-chat's controller drives. Nothing in
+ami core or ami-chat changes; the controller just renders through this instead.
 
-It's also the second reference example of an ami extension (after
-[`ami-custom-proactive.nvim`](https://github.com/moosch/ami-custom-proactive.nvim)),
-and a complete implementation of the `chat_ui` contract documented in ami's
+It's a reference example of an ami extension and a complete implementation of the
+`chat_ui` contract documented in ami's
 [`docs/extensions.md`](https://github.com/moosch/ami.nvim/blob/main/docs/extensions.md).
+It also hooks the `chat_turn_pre`/`chat_turn_post` lifecycle events (via `api.on`)
+to show a `⟳ streaming…` indicator in the prompt winbar for the whole turn.
 
 ## Requirements
 
-- [ami.nvim](https://github.com/moosch/ami.nvim) (provides the extension API and
-  the `chat_ui` capability this plugs into).
+- [ami.nvim](https://github.com/moosch/ami.nvim) — the runtime (extension API +
+  `chat_ui` capability).
+- [ami-chat.nvim](https://github.com/moosch/ami-chat.nvim) — the chat controller
+  this renderer replaces the UI of. **Required**: without it there's no chat to
+  render.
 
 ## Install
 
 With [lazy.nvim](https://github.com/folke/lazy.nvim), install it alongside ami and
-register it in ami's `setup()`:
+ami-chat, and register both in ami's `setup()`:
 
 ```lua
 {
   "moosch/ami.nvim",
-  dependencies = { "moosch/ami-chat-split.nvim" },
+  dependencies = {
+    "moosch/ami-chat.nvim",
+    "moosch/ami-chat-split.nvim",
+  },
   build = "make build",
   config = function()
     require("ami").setup({
-      extensions = { require("ami-chat-split") },
+      extensions = { require("ami-chat"), require("ami-chat-split") },
       -- optional (defaults shown):
       -- chat_split = { side = "right", width = 0.33, prompt_height = 6 },
     })
@@ -51,7 +59,7 @@ Config lives under `chat_split` in ami's `setup()`:
 | `width` | `0.33` | column width: a fraction of the screen (`<=1`) or absolute columns (`>1`) |
 | `prompt_height` | `6` | height of the input window, in lines |
 
-> ami's `chat.ui` options (`position`/`opacity`/…) apply to the **built-in**
+> ami-chat's `chat.ui` options (`position`/`opacity`/…) apply to its **bundled**
 > floating panel only; when this extension is active they're not used.
 
 ## License

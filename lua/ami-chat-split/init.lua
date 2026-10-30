@@ -1,17 +1,19 @@
 -- ami-chat-split: a split-window chat UI for ami.
 --
--- A second reference ami extension — it replaces ami's built-in floating chat
--- panel with a real window split (a sidebar column: transcript on top, prompt
--- below) by providing the "chat_ui" capability. Install it alongside ami and
--- register it:
+-- A reference ami extension — it replaces ami-chat.nvim's floating panel with a
+-- real window split (a sidebar column: transcript on top, prompt below) by
+-- providing the "chat_ui" capability that the chat controller drives. Install it
+-- alongside ami AND ami-chat.nvim, and register both:
 --
 --   require("ami").setup({
---     extensions = { require("ami-chat-split") },
+--     extensions = { require("ami-chat"), require("ami-chat-split") },
 --     -- optional: chat_split = { side = "right", width = 0.33, prompt_height = 6 }
 --   })
 --
 -- It implements the full chat_ui contract (see ami's docs/extensions.md):
 -- open/show/close/is_open/owns_buf/append/clear/set_status/read_input/clear_input.
+-- It also hooks the chat_turn_pre/post lifecycle events (api.on) to show a
+-- streaming indicator in the prompt winbar for the whole turn.
 
 -- The renderer. A single table instance is provided to ami as the chat_ui.
 local R = {
@@ -22,6 +24,9 @@ local R = {
   _status_text = nil,
   _cfg = nil, -- api.config, set in setup()
 }
+
+-- Prompt winbar; a streaming indicator is appended while a turn is in flight.
+local PROMPT_BAR = " Ask  (⏎ normal = send · ⌃n new · q close) "
 
 local function cfg()
   return R._cfg or {}
@@ -99,7 +104,7 @@ local function open_layout(ctl, focus_prompt)
   R.prompt_win = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(R.prompt_win, R.prompt_buf)
   vim.api.nvim_win_set_height(R.prompt_win, cfg().prompt_height or 6)
-  style_win(R.prompt_win, " Ask  (⏎ normal = send · ⌃n new · q close) ")
+  style_win(R.prompt_win, PROMPT_BAR)
 
   local opts = { buffer = R.prompt_buf, nowait = true, silent = true }
   vim.keymap.set("n", "<CR>", ctl.submit, opts)
@@ -197,6 +202,15 @@ function R.clear_input()
   end
 end
 
+-- Show/hide a streaming indicator in the prompt winbar. Driven by the
+-- chat_turn_pre/post events, so it covers the whole turn (set_status only covers
+-- the wait before the first token).
+function R.set_busy(on)
+  if win_valid(R.prompt_win) then
+    vim.wo[R.prompt_win].winbar = PROMPT_BAR .. (on and "  ⟳ streaming…" or "")
+  end
+end
+
 -- Extension spec --------------------------------------------------------------
 
 return {
@@ -209,6 +223,9 @@ return {
   setup = function(api)
     R._cfg = api.config
     api.provide("chat_ui", R)
-    api.log.debug("chat-split: registered chat_ui renderer")
+    -- Reflect streaming state in the prompt winbar for the whole turn.
+    api.on("chat_turn_pre", function() R.set_busy(true) end)
+    api.on("chat_turn_post", function() R.set_busy(false) end)
+    api.log.debug("chat-split: registered chat_ui renderer + turn hooks")
   end,
 }
