@@ -44,7 +44,6 @@ ami-chat, and register both in ami's `setup()`:
     "moosch/ami-chat.nvim",
     "moosch/ami-chat-split.nvim",
   },
-  build = "make build",
   config = function()
     require("ami").setup({
       extensions = { require("ami-chat"), require("ami-chat-split") },
