@@ -47,6 +47,18 @@ local function win_valid(w)
   return w and vim.api.nvim_win_is_valid(w)
 end
 
+-- Highlight the transcript like telescope's previewer: treesitter (markdown, with
+-- per-language fenced-code injections) when available, else regex syntax.
+local function start_highlight(buf)
+  local ts = vim.treesitter
+  if ts and ts.highlighter and ts.highlighter.active[buf] then
+    return
+  end
+  if not (ts and ts.start and pcall(ts.start, buf, "markdown")) then
+    pcall(function() vim.bo[buf].syntax = "markdown" end)
+  end
+end
+
 local function ensure_bufs()
   if not (R.transcript_buf and vim.api.nvim_buf_is_valid(R.transcript_buf)) then
     R.transcript_buf = vim.api.nvim_create_buf(false, true)
@@ -54,6 +66,7 @@ local function ensure_bufs()
     vim.bo[R.transcript_buf].buftype = "nofile"
     vim.bo[R.transcript_buf].filetype = "markdown"
     pcall(vim.api.nvim_buf_set_name, R.transcript_buf, "ami://chat")
+    start_highlight(R.transcript_buf)
   end
   if not (R.prompt_buf and vim.api.nvim_buf_is_valid(R.prompt_buf)) then
     R.prompt_buf = vim.api.nvim_create_buf(false, true)
